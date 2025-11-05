@@ -8,13 +8,19 @@ from rest_framework.response import Response
 class UserViewSet(viewsets.ModelViewSet):
     queryset = UserAccount.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [permissions.AllowAny]  # регистрацию можно открыть
+    def get_permissions(self):
+        if self.action in ['create']:
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]  # регистрацию можно открыть
 
 
 class MovieViewSet(viewsets.ModelViewSet):
     queryset = Movie.objects.all()
     serializer_class = MovieSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [permissions.IsAdminUser()]
+        return [permissions.AllowAny()]
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
