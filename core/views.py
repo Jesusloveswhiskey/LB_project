@@ -36,3 +36,4 @@ class LikeViewSet(viewsets.ModelViewSet):
     queryset = Like.objects.all()
     serializer_class = LikeSerializer
     permission_classes = [permissions.IsAuthenticated]
+
