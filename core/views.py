@@ -10,15 +10,15 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
     def get_permissions(self):
         if self.action in ['create']:
-            return [permissions.AllowAny()]
-        return [permissions.IsAuthenticated()]  # регистрацию можно открыть
+            return [permissions.AllowAny()] #регистрация доступна всем
+        return [permissions.IsAuthenticated()]  #остальные действия требуют аутентификации
 
 
 class MovieViewSet(viewsets.ModelViewSet):
     queryset = Movie.objects.all()
     serializer_class = MovieSerializer
     def get_permissions(self):
-        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+        if self.action in ['create', 'update', 'partial_update', 'destroy']: #только админ может изменять данные о фильмах
             return [permissions.IsAdminUser()]
         return [permissions.AllowAny()]
 
