@@ -1,0 +1,70 @@
+import { useEffect, useState } from "react";
+import api from "../api/axios";
+
+export default function MovieList() {
+  const [movies, setMovies] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.get("/movies/")
+      .then(res => setMovies(res.data))
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return <div>Загрузка...</div>;
+  }
+
+  if (movies.length === 0) {
+    return <div>Фильмов пока нет.</div>;
+  }
+
+  return (
+    <div>
+      <h1>Фильмы</h1>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, 200px)",
+          gap: "20px",
+        }}
+      >
+        {movies.map(movie => (
+          <div key={movie.id} style={{ textAlign: "center" }}>
+            {movie.poster ? (
+              <img
+                src={movie.poster}
+                alt={movie.title}
+                style={{
+                  width: "200px",
+                  height: "300px",
+                  objectFit: "cover",
+                  borderRadius: "8px",
+                }}
+              />
+            ) : (
+              <div
+                style={{
+                  width: "200px",
+                  height: "300px",
+                  background: "#ccc",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: "8px",
+                }}
+              >
+                Нет постера
+              </div>
+            )}
+
+            <h3 style={{ marginTop: "10px" }}>{movie.title}</h3>
+            <p>{movie.year_released}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
