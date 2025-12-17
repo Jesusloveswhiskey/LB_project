@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../api/axios";
+import { Link } from "react-router-dom";
 
 export default function MovieList() {
   const [movies, setMovies] = useState([]);
@@ -32,37 +33,23 @@ export default function MovieList() {
         }}
       >
         {movies.map(movie => (
-          <div key={movie.id} style={{ textAlign: "center" }}>
-            {movie.poster ? (
-              <img
+            <Link
+            to={`/movies/${movie.id}`}
+            style={{ textDecoration: "none", color: "inherit" }}
+            >
+            <img
                 src={movie.poster}
                 alt={movie.title}
                 style={{
-                  width: "200px",
-                  height: "300px",
-                  objectFit: "cover",
-                  borderRadius: "8px",
+                width: "200px",
+                height: "300px",
+                objectFit: "cover",
+                borderRadius: "8px",
                 }}
-              />
-            ) : (
-              <div
-                style={{
-                  width: "200px",
-                  height: "300px",
-                  background: "#ccc",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  borderRadius: "8px",
-                }}
-              >
-                Нет постера
-              </div>
-            )}
-
+            />
             <h3 style={{ marginTop: "10px" }}>{movie.title}</h3>
             <p>{movie.year_released}</p>
-          </div>
+            </Link>
         ))}
       </div>
     </div>

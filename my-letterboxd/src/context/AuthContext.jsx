@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { fetchCsrf, getCurrentUser } from "../api/auth";
+import { fetchCsrf, getCurrentUser, logout as apiLogout } from "../api/auth";
 
 const AuthContext = createContext(null);
 
@@ -10,8 +10,8 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const initAuth = async () => {
       try {
-        await fetchCsrf(); // установить CSRF cookie
-        const res = await getCurrentUser(); // получить пользователя
+        await fetchCsrf();
+        const res = await getCurrentUser();
         setUser(res.data);
       } catch {
         setUser(null);
@@ -23,8 +23,18 @@ export const AuthProvider = ({ children }) => {
     initAuth();
   }, []);
 
+  const logout = async () => {
+    try {
+      await apiLogout();
+    } catch (e) {
+      console.error("Logout failed", e);
+    } finally {
+      setUser(null);
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, setUser, loading }}>
+    <AuthContext.Provider value={{ user, setUser, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

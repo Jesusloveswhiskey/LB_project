@@ -8,6 +8,19 @@ class UserAccount(AbstractUser):
     def __str__(self):
         return self.username
     
+class Person(models.Model):
+    ROLE_CHOICES = (
+        ('actor', 'Actor'),
+        ('director', 'Director'),
+        ('writer', 'Writer'),
+    )
+
+    name = models.CharField(max_length=255)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES)
+
+    def __str__(self):
+        return f"{self.name} ({self.role})"
+    
 class Movie(models.Model):
     title = models.CharField(max_length=255)
     genre = models.CharField(max_length=100)
@@ -16,6 +29,7 @@ class Movie(models.Model):
     length_minutes = models.PositiveIntegerField()
     average_rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.00)
     poster = models.CharField(max_length=255, blank=True)
+    people = models.ManyToManyField(Person, related_name="movies", blank=True)
 
     def __str__(self):
         return self.title
@@ -40,3 +54,5 @@ class Like(models.Model):
 
     class Meta:
         unique_together = ('user', 'review')
+
+

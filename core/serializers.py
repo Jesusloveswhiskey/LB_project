@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import UserAccount, Movie, Review, Like
+from .models import UserAccount, Movie, Review, Like, Person
 from django.contrib.auth.hashers import make_password
 
 class UserSerializer(serializers.ModelSerializer):
@@ -24,11 +24,31 @@ class UserSerializer(serializers.ModelSerializer):
         return user
 
 
+class PersonSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Person
+        fields = ["id", "name", "role"]
+
+
 class MovieSerializer(serializers.ModelSerializer):
+    people = PersonSerializer(many=True, read_only=True)
+
     class Meta:
         model = Movie
         fields = '__all__'
 
+class MovieShortSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Movie
+        fields = ["id", "title", "year_released", "poster"]
+
+
+class PersonDetailSerializer(serializers.ModelSerializer):
+    movies = MovieShortSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Person
+        fields = ["id", "name", "role", "movies"]
 
 class ReviewSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField(read_only=True)
@@ -42,3 +62,5 @@ class LikeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Like
         fields = '__all__'
+
+
