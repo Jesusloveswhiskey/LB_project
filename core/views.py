@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from rest_framework import viewsets, permissions
-from .models import UserAccount, Movie, Review, Like, Person
-from .serializers import UserSerializer, MovieSerializer, ReviewSerializer, LikeSerializer, PersonDetailSerializer
+from .models import UserAccount, Movie, Review, Like, Person, Rating
+from .serializers import UserSerializer, MovieSerializer, ReviewSerializer, LikeSerializer, PersonDetailSerializer, RatingSerializer
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -40,3 +40,14 @@ class LikeViewSet(viewsets.ModelViewSet):
 class PersonViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Person.objects.all()
     serializer_class = PersonDetailSerializer
+
+
+class RatingViewSet(viewsets.ModelViewSet):
+    serializer_class = RatingSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Rating.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)

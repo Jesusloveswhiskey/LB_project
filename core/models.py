@@ -56,3 +56,23 @@ class Like(models.Model):
         unique_together = ('user', 'review')
 
 
+
+class Rating(models.Model):
+    user = models.ForeignKey(
+        UserAccount,
+        on_delete=models.CASCADE,
+        related_name="ratings"
+    )
+    movie = models.ForeignKey(
+        Movie,
+        on_delete=models.CASCADE,
+        related_name="ratings"
+    )
+    score = models.PositiveSmallIntegerField()  # 1–10
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("user", "movie")  # Один пользователь может оценить фильм только один раз
+
+    def __str__(self):
+        return f"{self.user} → {self.movie}: {self.score}"
