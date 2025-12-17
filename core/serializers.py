@@ -27,7 +27,7 @@ class UserSerializer(serializers.ModelSerializer):
 class PersonSerializer(serializers.ModelSerializer):
     class Meta:
         model = Person
-        fields = ["id", "name", "role"]
+        fields = ["id", "name", "role", "photo"]
 
 
 class MovieSerializer(serializers.ModelSerializer):

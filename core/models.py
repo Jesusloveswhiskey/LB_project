@@ -17,6 +17,7 @@ class Person(models.Model):
 
     name = models.CharField(max_length=255)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
+    photo = models.CharField(max_length=255, blank=True)
 
     def __str__(self):
         return f"{self.name} ({self.role})"
