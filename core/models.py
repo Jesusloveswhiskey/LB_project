@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Avg
 
 # Create your models here.
 
@@ -77,3 +78,9 @@ class Rating(models.Model):
 
     def __str__(self):
         return f"{self.user} → {self.movie}: {self.score}"
+
+
+def update_movie_rating(movie):
+    avg = movie.ratings.aggregate(avg=Avg("score"))["avg"]
+    movie.average_rating = round(avg or 0, 2)
+    movie.save(update_fields=["average_rating"])
