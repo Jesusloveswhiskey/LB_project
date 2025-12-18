@@ -1,0 +1,12 @@
+.movie-card {
+  text-decoration: none;
+  color: inherit;
+  width: 160px;
+  flex-shrink: 0; /*горизонтального скролла */
+}
+
+.movie-title {
+  margin-top: 6px;
+  font-size: 14px;
+  text-align: center;
+}

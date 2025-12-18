@@ -1,17 +1,42 @@
 import { useEffect, useState } from "react";
 import api from "../api/axios";
-import { Link } from "react-router-dom";
+import SearchBar from "../components/SearchBar";
+import MovieGrid from "../components/MovieGrid";
+import Poster from "../components/Poster";
 
 export default function MovieList() {
   const [movies, setMovies] = useState([]);
+  const [discover, setDiscover] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // фильтры
   const [search, setSearch] = useState("");
   const [genre, setGenre] = useState("");
   const [ratingFrom, setRatingFrom] = useState("");
 
-  const fetchMovies = async () => {
+  const isEmptySearch = !search && !genre && !ratingFrom;
+
+  useEffect(() => {
+    if (isEmptySearch) {
+      loadDiscover();
+    } else {
+      searchMovies();
+    }
+  }, [search, genre, ratingFrom]);
+
+  const loadDiscover = async () => {
+    setLoading(true);
+    try {
+      const res = await api.get("/movies/discover/");
+      setDiscover(res.data);
+      setMovies([]); 
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const searchMovies = async () => {
     setLoading(true);
     try {
       const res = await api.get("/movies/", {
@@ -22,94 +47,51 @@ export default function MovieList() {
         },
       });
       setMovies(res.data);
+      setDiscover(null); 
     } catch (e) {
-      console.error("FETCH MOVIES ERROR", e);
+      console.error(e);
     } finally {
       setLoading(false);
     }
   };
 
-  // первая загрузка
-  useEffect(() => {
-    fetchMovies();
-  }, []);
-
   return (
-    <div style={{ padding: "20px" }}>
-      {/* 🔍 ПАНЕЛЬ ПОИСКА / ФИЛЬТРОВ */}
-      <div
-        style={{
-          padding: "16px",
-          background: "#f5f5f5",
-          borderRadius: "10px",
-          marginBottom: "30px",
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "10px",
-          alignItems: "center",
-        }}
-      >
-        <input
-          type="text"
-          placeholder="Поиск по названию…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+    <div>
+      <h1>Фильмы</h1>
 
-        <input
-          type="text"
-          placeholder="Жанр"
-          value={genre}
-          onChange={(e) => setGenre(e.target.value)}
-        />
+      <SearchBar
+        search={search}
+        setSearch={setSearch}
+        genre={genre}
+        setGenre={setGenre}
+        ratingFrom={ratingFrom}
+        setRatingFrom={setRatingFrom}
+      />
 
-        <input
-          type="number"
-          placeholder="Рейтинг от"
-          min="1"
-          max="10"
-          value={ratingFrom}
-          onChange={(e) => setRatingFrom(e.target.value)}
-          style={{ width: "120px" }}
-        />
+      {loading && <p>Загрузка...</p>}
 
-        <button onClick={fetchMovies}>Найти</button>
-      </div>
+      {/* коллекции */}
+      {!loading && discover && (
+        <>
+          <h2>⭐ Лучшие фильмы</h2>
+          <MovieGrid movies={discover.top} />
 
-      {/* 🎬 СПИСОК ФИЛЬМОВ */}
-      {loading ? (
-        <p>Загрузка...</p>
-      ) : movies.length === 0 ? (
-        <p>Фильмы не найдены</p>
-      ) : (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, 200px)",
-            gap: "20px",
-          }}
-        >
-          {movies.map((movie) => (
-            <Link
-              key={movie.id}
-              to={`/movies/${movie.id}`}
-              style={{ textDecoration: "none", color: "inherit" }}
-            >
-              <img
-                src={movie.poster}
-                alt={movie.title}
-                style={{
-                  width: "200px",
-                  height: "300px",
-                  objectFit: "cover",
-                  borderRadius: "8px",
-                }}
-              />
-              <h3 style={{ marginTop: "8px" }}>{movie.title}</h3>
-              <p style={{ color: "#666" }}>{movie.year_released}</p>
-            </Link>
+          {Object.entries(discover.by_genre).map(([genre, movies]) => (
+            <div key={genre}>
+              <h2>{genre}</h2>
+              <MovieGrid movies={movies} />
+            </div>
           ))}
-        </div>
+        </>
+      )}
+
+      {/* поиск */}
+      {!loading && !discover && movies.length === 0 && (
+        <p>Ничего не найдено</p>
+      )}
+
+      {!loading && movies.length > 0 && (
+        <MovieGrid movies={movies} />
       )}
     </div>
   );

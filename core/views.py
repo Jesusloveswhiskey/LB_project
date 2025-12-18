@@ -6,6 +6,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import api_view
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = UserAccount.objects.all()
@@ -53,6 +54,35 @@ class MovieViewSet(viewsets.ModelViewSet):
             qs = qs.filter(average_rating__gte=rating_from)
 
         return qs
+    
+    @action(detail=False, methods=["get"])
+    def discover(self, request):
+        # Топ фильмов
+        top_movies = (
+            Movie.objects
+            .order_by("-average_rating")[:10]
+        )
+
+        genres = (
+            Movie.objects
+            .values_list("genre", flat=True)
+            .distinct()
+        )
+
+        by_genre = {}
+
+        for genre in genres:
+            movies = (
+                Movie.objects
+                .filter(genre=genre)
+                .order_by("-average_rating")[:6]
+            )
+            by_genre[genre] = MovieSerializer(movies, many=True).data
+
+        return Response({
+            "top": MovieSerializer(top_movies, many=True).data,
+            "by_genre": by_genre
+        })
 
 class ReviewViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all()
@@ -80,18 +110,38 @@ class RatingViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        # пользователь видит только свои оценки
         return Rating.objects.filter(user=self.request.user)
 
-    def perform_create(self, serializer):
-        rating = serializer.save(user=self.request.user)
-        update_movie_rating(rating.movie)
+    # def create(self, request, *args, **kwargs):
+    #     movie_id = request.data.get("movie")
+    #     score = request.data.get("score")
 
-    def perform_update(self, serializer):
-        rating = serializer.save()
-        update_movie_rating(rating.movie)
+    #     rating, created = Rating.objects.update_or_create(
+    #         user=request.user,
+    #         movie_id=movie_id,
+    #         defaults={"score": score},
+    #     )
+    #     avg = rating.movie.ratings.aggregate(avg=Avg("score"))["avg"]
+    #     rating.movie.average_rating = round(avg or 0, 2)
+    #     rating.movie.save(update_fields=["average_rating"])
 
-    def perform_destroy(self, instance):
-        movie = instance.movie
-        instance.delete()
-        update_movie_rating(movie)
+    #     serializer = self.get_serializer(rating)
+    #     return Response(serializer.data)
+    def create(self, request, *args, **kwargs):
+
+        user = request.user
+        movie_id = request.data.get('movie')
+        
+
+        existing_rating = Rating.objects.filter(user=user, movie=movie_id).first()
+
+        if existing_rating:
+
+            serializer = self.get_serializer(existing_rating, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            self.perform_update(serializer)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        else:
+
+            return super().create(request, *args, **kwargs)
+

@@ -8,9 +8,9 @@ export default function Header() {
 
   const handleLogout = async () => {
     try {
-      await logoutApi();   // 🔹 logout на бэке
-      setUser(null);       // 🔹 очистка фронта
-      navigate("/login");  // 🔹 редирект
+      await logoutApi();   
+      setUser(null);       
+      navigate("/login");  
     } catch (e) {
       console.error("Logout failed", e);
     }
@@ -22,6 +22,7 @@ export default function Header() {
     <header style={{ display: "flex", gap: "20px" }}>
       <Link to="/">Главная</Link>
       <Link to="/movies">Фильмы</Link>
+      <Link to="/movies/search">Поиск</Link>
 
       {!user ? (
         <>

@@ -1,0 +1,41 @@
+.movie-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+/* горизонтальный режим */
+.movie-grid.horizontal {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+}
+
+/* КАРТОЧКА */
+.movie-card {
+  flex: 0 0 160px;           /* 🔥 КЛЮЧЕВОЕ */
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  color: inherit;
+}
+
+/* ПОСТЕР */
+.movie-card img {
+  width: 100%;
+  aspect-ratio: 2 / 3;      /* 600x900 */
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+/* ТЕКСТ */
+.movie-card h4 {
+  margin: 6px 0 2px;
+  font-size: 14px;
+}
+
+.movie-card span {
+  font-size: 13px;
+  opacity: 0.8;
+}

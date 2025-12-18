@@ -1,0 +1,15 @@
+.poster-wrapper {
+  width: 100%;
+  max-width: 200px;      
+  aspect-ratio: 2 / 3;   /* 600x900 */
+  background-color: #ddd;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.poster-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}

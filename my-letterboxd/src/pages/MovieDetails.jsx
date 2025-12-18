@@ -48,49 +48,42 @@ export default function MovieDetail() {
       .catch(err => console.error("MOVIE LOAD ERROR:", err));
   }, [id]);
 
-  // ⭐ Исправленная отправка рейтинга
-  const submitRating = async (score) => {
-    // 1. Оптимистичное обновление UI:
-    // Сразу рисуем звезды, чтобы пользователь видел реакцию мгновенно
-    const prevRating = userRating; // Сохраняем на случай ошибки
-    
-    // Временно обновляем стейт (id оставляем старым, если был)
-    setUserRating((prev) => ({
-      ...(prev || {}), 
-      score: score 
-    }));
+const submitRating = async (score) => {
 
-    try {
-      const payload = {
-        movie: movie.id,
-        score: score
-      };
+  const prevRating = userRating; 
 
-      let res;
-      // Если у нас уже есть ID рейтинга в стейте — делаем PUT (обновление)
-      // Если нет — делаем POST (создание)
-      if (userRating?.id) {
-        res = await api.put(`/ratings/${userRating.id}/`, payload);
-      } else {
-        res = await api.post("/ratings/", payload);
-      }
+  setUserRating((prev) => ({
+    ...(prev || {}),
+    score: score,
+    id: prev?.id 
+  }));
 
-      // 2. Обновляем стейт реальными данными от сервера (чтобы получить ID, если это был POST)
-      console.log("Rating Response:", res.data);
-      setUserRating(res.data);
+  try {
+    const payload = {
+      movie: movie.id, 
+      score: score
+    };
 
-      // Опционально: обновляем средний рейтинг фильма (если он пересчитывается на бэкенде)
-      // Можно не делать лишний запрос, если бэкенд возвращает новый average_rating в ответе рейтинга
-      const movieRes = await api.get(`/movies/${id}/`);
-      setMovie(movieRes.data);
-
-    } catch (e) {
-      console.error("RATING ERROR:", e.response?.data || e);
-      // Если ошибка — откатываем звезды назад
-      setUserRating(prevRating);
-      alert("Не удалось сохранить оценку.");
+    let res;
+    if (prevRating?.id) {
+       res = await api.put(`/ratings/${prevRating.id}/`, payload);
+    } else {
+       res = await api.post("/ratings/", payload);
     }
-  };
+
+
+    setUserRating(res.data);
+    api.get(`/movies/${id}/`).then(movieRes => {
+        setMovie(movieRes.data);
+    });
+
+  } catch (e) {
+    console.error("RATING ERROR:", e.response?.data || e);
+    
+    setUserRating(prevRating);
+    // alert("Не удалось сохранить оценку. Проверьте соединение.");
+  }
+};
 
   if (!movie) return <p>Загрузка...</p>;
 

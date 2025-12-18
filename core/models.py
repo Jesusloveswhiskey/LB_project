@@ -18,7 +18,7 @@ class Person(models.Model):
 
     name = models.CharField(max_length=255)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
-    photo = models.CharField(max_length=255, blank=True)
+    photo = models.CharField(max_length=1024, blank=True)
 
     def __str__(self):
         return f"{self.name} ({self.role})"
@@ -30,7 +30,7 @@ class Movie(models.Model):
     description = models.TextField(blank=True)
     length_minutes = models.PositiveIntegerField()
     average_rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.00)
-    poster = models.CharField(max_length=255, blank=True)
+    poster = models.CharField(max_length=1024, blank=True)
     people = models.ManyToManyField(Person, related_name="movies", blank=True)
 
     def __str__(self):
@@ -74,7 +74,22 @@ class Rating(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ("user", "movie")  # Один пользователь может оценить фильм только один раз
+        unique_together = ("user", "movie")
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.update_movie_rating()
+
+    def delete(self, *args, **kwargs):
+        movie = self.movie
+        super().delete(*args, **kwargs)
+        self.update_movie_rating(movie)
+
+    def update_movie_rating(self, movie=None):
+        movie = movie or self.movie
+        avg = movie.ratings.aggregate(avg=Avg("score"))["avg"]
+        movie.average_rating = round(avg or 0, 2)
+        movie.save(update_fields=["average_rating"])
 
     def __str__(self):
         return f"{self.user} → {self.movie}: {self.score}"
