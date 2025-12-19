@@ -1,12 +1,16 @@
 from django.shortcuts import render
 from rest_framework import viewsets, permissions
 from .models import UserAccount, Movie, Review, Like, Person, Rating, update_movie_rating
-from .serializers import UserSerializer, MovieSerializer, ReviewSerializer, LikeSerializer, PersonDetailSerializer, RatingSerializer
+from .serializers import UserSerializer, MovieSerializer, ReviewSerializer, LikeSerializer, PersonSerializer, RatingSerializer, ProfileMovieSerializer
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import (
+    IsAuthenticated,
+    IsAuthenticatedOrReadOnly,
+)
 from rest_framework.decorators import api_view
+from django.db.models import Q
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = UserAccount.objects.all()
@@ -55,6 +59,17 @@ class MovieViewSet(viewsets.ModelViewSet):
 
         return qs
     
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["request"] = self.request
+        return context
+    
+    @action(detail=False, methods=["get"], permission_classes=[IsAuthenticated])
+    def liked(self, request):
+        movies = Movie.objects.filter(liked_by__user=request.user)
+        serializer = self.get_serializer(movies, many=True)
+        return Response(serializer.data)
+    
     @action(detail=False, methods=["get"])
     def discover(self, request):
         # Топ фильмов
@@ -83,65 +98,93 @@ class MovieViewSet(viewsets.ModelViewSet):
             "top": MovieSerializer(top_movies, many=True).data,
             "by_genre": by_genre
         })
+    
+    @action(detail=False, methods=["get"], permission_classes=[IsAuthenticated])
+    def my(self, request):
+        movies = Movie.objects.filter(
+            Q(ratings__user=request.user) |
+            Q(reviews__user=request.user)
+        ).distinct()
+
+        serializer = ProfileMovieSerializer(
+            movies,
+            many=True,
+            context={"request": request}
+        )
+        return Response(serializer.data)
 
 class ReviewViewSet(viewsets.ModelViewSet):
-    queryset = Review.objects.all()
     serializer_class = ReviewSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        movie_id = self.request.query_params.get("movie")
+        qs = Review.objects.all()
+        if movie_id:
+            qs = qs.filter(movie_id=movie_id)
+        return qs
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
     
-
-
 class LikeViewSet(viewsets.ModelViewSet):
     queryset = Like.objects.all()
     serializer_class = LikeSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Like.objects.filter(user=self.request.user)
+
+    @action(detail=False, methods=["post"])
+    def toggle(self, request):
+        movie_id = request.data.get("movie")
+
+        if not movie_id:
+            return Response({"error": "movie is required"}, status=400)
+
+        like = Like.objects.filter(
+            user=request.user,
+            movie_id=movie_id
+        ).first()
+
+        if like:
+            like.delete()
+            return Response({"liked": False})
+        else:
+            Like.objects.create(
+                user=request.user,
+                movie_id=movie_id
+            )
+            return Response({"liked": True})
 
 class PersonViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Person.objects.all()
-    serializer_class = PersonDetailSerializer
+    serializer_class = PersonSerializer
 
 
 class RatingViewSet(viewsets.ModelViewSet):
     serializer_class = RatingSerializer
     permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        return Rating.objects.filter(user=self.request.user)
+    def get_queryset(self): #получение рейтинга только для ТЕКУЗЕГО пользователя
+        qs = Review.objects.all()
 
-    # def create(self, request, *args, **kwargs):
-    #     movie_id = request.data.get("movie")
-    #     score = request.data.get("score")
+        if self.request.user.is_authenticated:
+            qs = qs.filter(user=self.request.user)
 
-    #     rating, created = Rating.objects.update_or_create(
-    #         user=request.user,
-    #         movie_id=movie_id,
-    #         defaults={"score": score},
-    #     )
-    #     avg = rating.movie.ratings.aggregate(avg=Avg("score"))["avg"]
-    #     rating.movie.average_rating = round(avg or 0, 2)
-    #     rating.movie.save(update_fields=["average_rating"])
+        return qs
 
-    #     serializer = self.get_serializer(rating)
-    #     return Response(serializer.data)
     def create(self, request, *args, **kwargs):
+        movie_id = request.data.get("movie")
+        score = request.data.get("score")
 
-        user = request.user
-        movie_id = request.data.get('movie')
-        
+        rating, created = Rating.objects.update_or_create(
+            user=request.user,
+            movie_id=movie_id,
+            defaults={"score": score}
+        )
 
-        existing_rating = Rating.objects.filter(user=user, movie=movie_id).first()
-
-        if existing_rating:
-
-            serializer = self.get_serializer(existing_rating, data=request.data, partial=True)
-            serializer.is_valid(raise_exception=True)
-            self.perform_update(serializer)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        else:
-
-            return super().create(request, *args, **kwargs)
+        serializer = self.get_serializer(rating)
+        return Response(serializer.data)
 

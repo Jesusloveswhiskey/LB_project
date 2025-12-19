@@ -8,6 +8,9 @@ import MovieDetail from "./pages/MovieDetails";
 import PersonDetail from "./pages/PersonDetails";
 import Register from "./pages/Register";
 import MovieSearch from "./pages/MovieSearch";
+import LikedMovies from "./pages/LikedMovies";
+import Profile from "./pages/Profile";
+
 
 
 function App() {
@@ -23,6 +26,8 @@ function App() {
         <Route path="/movies/:id" element={<MovieDetail />} />
         <Route path="/people/:id" element={<PersonDetail />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/likes" element={<LikedMovies />} />
+        <Route path="/profile" element={<Profile />} />
       </Routes>
     </>
   );

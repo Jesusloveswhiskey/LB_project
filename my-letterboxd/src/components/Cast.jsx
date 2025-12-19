@@ -1,90 +1,34 @@
-import { Link } from "react-router-dom";
+import PersonGrid from "./PersonGrid";
 
 export default function CastAndCrew({ people }) {
   if (!people || people.length === 0) return null;
 
-  // 1. Ссылка-заглушка, если фото не указано
-  const placeholderImg = "https://via.placeholder.com/150x200?text=No+Photo";
+  const normalize = (role) =>
+    role?.trim().toLowerCase();
 
-  // Хелпер для фильтрации (добавил проверку на наличие поля role)
   const byRole = (role) =>
-    people.filter(
-      (p) => p.role && p.role.trim().toLowerCase() === role
-    );
+    people.filter(p => normalize(p.role) === role);
 
   const actors = byRole("actor");
   const directors = byRole("director");
   const writers = byRole("writer");
 
-  const renderList = (title, items) => {
+  const Section = ({ title, items }) => {
     if (!items || items.length === 0) return null;
 
     return (
-      <div style={{ marginBottom: "30px" }}>
-        <h3 style={{ fontSize: "18px", marginBottom: "15px", color: "#333" }}>
-          {title}
-        </h3>
-        
-        {/* Контейнер для карточек (Flexbox) */}
-        <div style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}>
-          {items.map((p) => (
-            <Link
-              key={p.id}
-              to={`/people/${p.id}`}
-              style={{
-                textDecoration: "none",
-                color: "inherit",
-                width: "120px", // Фиксированная ширина карточки
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-              }}
-            >
-              {/* ФОТО */}
-              <div style={{ 
-                width: "120px", 
-                height: "150px", 
-                overflow: "hidden", 
-                borderRadius: "8px",
-                boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
-                marginBottom: "8px",
-                backgroundColor: "#eee"
-              }}>
-                <img
-                  // Если ссылка есть - берем её, если нет - заглушку
-                  src={p.photo ? p.photo : placeholderImg} 
-                  alt={p.name}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover", // Обрезает лишнее, сохраняя пропорции (важно!)
-                  }}
-                  // Если ссылка битая, ставим заглушку
-                  onError={(e) => { e.target.src = placeholderImg; }} 
-                />
-              </div>
-
-              {/* ИМЯ */}
-              <div style={{ 
-                textAlign: "center", 
-                fontSize: "14px", 
-                fontWeight: "600",
-                lineHeight: "1.2"
-              }}>
-                {p.name}
-              </div>
-            </Link>
-          ))}
-        </div>
+      <div style={{ marginBottom: "40px" }}>
+        <h3 style={{ marginBottom: "16px" }}>{title}</h3>
+        <PersonGrid people={items} />
       </div>
     );
   };
 
   return (
-    <div style={{ marginTop: "40px", borderTop: "1px solid #eee", paddingTop: "20px" }}>
-      {renderList("Режиссёры", directors)}
-      {renderList("Сценаристы", writers)}
-      {renderList("Актёры", actors)}
+    <div style={{ marginTop: "40px" }}>
+      <Section title="Режиссёры" items={directors} />
+      <Section title="Сценаристы" items={writers} />
+      <Section title="Актёры" items={actors} />
     </div>
   );
 }

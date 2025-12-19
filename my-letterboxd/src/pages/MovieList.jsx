@@ -1,17 +1,18 @@
 import { useEffect, useState } from "react";
 import api from "../api/axios";
-import SearchBar from "../components/SearchBar";
 import MovieGrid from "../components/MovieGrid";
 import Poster from "../components/Poster";
+import { useSearch } from "../context/SearchContext";
 
 export default function MovieList() {
+  const { search, genre, ratingFrom } = useSearch();
   const [movies, setMovies] = useState([]);
   const [discover, setDiscover] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const [search, setSearch] = useState("");
-  const [genre, setGenre] = useState("");
-  const [ratingFrom, setRatingFrom] = useState("");
+  // const [search] = useState("");
+  // const [genre, setGenre] = useState("");
+  // const [ratingFrom, setRatingFrom] = useState("");
 
   const isEmptySearch = !search && !genre && !ratingFrom;
 
@@ -59,14 +60,14 @@ export default function MovieList() {
     <div>
       <h1>Фильмы</h1>
 
-      <SearchBar
+      {/* <SearchBar
         search={search}
         setSearch={setSearch}
         genre={genre}
         setGenre={setGenre}
         ratingFrom={ratingFrom}
         setRatingFrom={setRatingFrom}
-      />
+      /> */}
 
       {loading && <p>Загрузка...</p>}
 

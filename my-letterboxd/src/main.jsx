@@ -5,8 +5,10 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App.jsx";
 import { AuthProvider } from "./context/AuthContext";
 import "./index.css";
+import { SearchProvider } from "./context/SearchContext";
 
 createRoot(document.getElementById("root")).render(
+  <SearchProvider>
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
@@ -14,4 +16,5 @@ createRoot(document.getElementById("root")).render(
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>
+  </SearchProvider>
 );

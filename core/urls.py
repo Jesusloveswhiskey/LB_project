@@ -6,10 +6,10 @@ from .views_auth import login_view, logout_view, csrf_cookie_view, current_user_
 router = DefaultRouter()
 router.register(r'users', UserViewSet, basename='user')
 router.register(r'movies', MovieViewSet, basename='movie')
-router.register(r'reviews', ReviewViewSet, basename='review')
-router.register(r'likes', LikeViewSet, basename='like')
+router.register(r"likes", LikeViewSet, basename="like")
 router.register(r'people', PersonViewSet, basename='person')
 router.register(r'ratings', RatingViewSet, basename='rating')
+router.register(r"reviews", ReviewViewSet, basename="review")
 
 urlpatterns = [
     path('', include(router.urls)),
@@ -18,4 +18,5 @@ urlpatterns = [
     path('auth/csrf/', csrf_cookie_view, name='csrf'),
     path('auth/user/', current_user_view, name='current_user'),
     path("auth/register/", register_view, name="register"),
+    
 ]

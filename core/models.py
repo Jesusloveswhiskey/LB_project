@@ -19,6 +19,7 @@ class Person(models.Model):
     name = models.CharField(max_length=255)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
     photo = models.CharField(max_length=1024, blank=True)
+    
 
     def __str__(self):
         return f"{self.name} ({self.role})"
@@ -29,7 +30,7 @@ class Movie(models.Model):
     year_released = models.PositiveIntegerField()
     description = models.TextField(blank=True)
     length_minutes = models.PositiveIntegerField()
-    average_rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.00)
+    average_rating = models.DecimalField(max_digits=4, decimal_places=2, default=0.00)
     poster = models.CharField(max_length=1024, blank=True)
     people = models.ManyToManyField(Person, related_name="movies", blank=True)
 
@@ -38,24 +39,45 @@ class Movie(models.Model):
     
 
 class Review(models.Model):
+    user = models.ForeignKey(
+        UserAccount,
+        on_delete=models.CASCADE,
+        related_name="reviews"
+    )
+    movie = models.ForeignKey(
+        Movie,
+        on_delete=models.CASCADE,
+        related_name="reviews"
+    )
     text = models.TextField()
-    creation_date = models.DateTimeField(auto_now_add=True)
-    rating = models.IntegerField()
-    user = models.ForeignKey('UserAccount', on_delete=models.CASCADE)
-    movie = models.ForeignKey('Movie', on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("user", "movie")  
+        ordering = ["-created_at"]
 
     def __str__(self):
-        return f"{self.user.username} - {self.movie.title}"
+        return f"{self.user} → {self.movie}"
    
 
 class Like(models.Model):
-    is_like = models.BooleanField(default=True)
-    date = models.DateTimeField(auto_now_add=True)
-    user = models.ForeignKey('UserAccount', on_delete=models.CASCADE)
-    review = models.ForeignKey('Review', on_delete=models.CASCADE)
+    user = models.ForeignKey(
+        UserAccount,
+        on_delete=models.CASCADE,
+        related_name="likes"
+    )
+    movie = models.ForeignKey(
+        Movie,
+        on_delete=models.CASCADE,
+        related_name="liked_by"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('user', 'review')
+        unique_together = ("user", "movie")
+
+    def __str__(self):
+        return f"{self.user} ♥ {self.movie}"
 
 
 

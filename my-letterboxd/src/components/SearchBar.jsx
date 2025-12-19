@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./SearchBar.css";
 
 export default function SearchBar({
@@ -8,9 +9,9 @@ export default function SearchBar({
   setGenre,
   ratingFrom,
   setRatingFrom,
-  onSearch,
 }) {
   const [open, setOpen] = useState(null); // genre | rating | null
+  const navigate = useNavigate();
 
   const genres = [
     "Драма",
@@ -23,12 +24,9 @@ export default function SearchBar({
 
   const ratings = [1,2,3,4,5,6,7,8,9,10];
 
-  const handleEnter = (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      onSearch();
-      setOpen(null);
-    }
+  const submitSearch = () => {
+    setOpen(null);
+    navigate("/movies");
   };
 
   return (
@@ -39,7 +37,12 @@ export default function SearchBar({
         placeholder="Поиск фильмов..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        onKeyDown={handleEnter}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            submitSearch();
+          }
+        }}
       />
 
       {/* ЖАНР */}
@@ -59,8 +62,7 @@ export default function SearchBar({
                 className="dropdown-item"
                 onClick={() => {
                   setGenre(g);
-                  setOpen(null);
-                  onSearch();
+                  submitSearch();
                 }}
               >
                 {g}
@@ -72,8 +74,7 @@ export default function SearchBar({
                 className="dropdown-item clear"
                 onClick={() => {
                   setGenre("");
-                  setOpen(null);
-                  onSearch();
+                  submitSearch();
                 }}
               >
                 Сбросить
@@ -100,8 +101,7 @@ export default function SearchBar({
                 className="dropdown-item"
                 onClick={() => {
                   setRatingFrom(r);
-                  setOpen(null);
-                  onSearch();
+                  submitSearch();
                 }}
               >
                 ★ от {r}
@@ -113,8 +113,7 @@ export default function SearchBar({
                 className="dropdown-item clear"
                 onClick={() => {
                   setRatingFrom("");
-                  setOpen(null);
-                  onSearch();
+                  submitSearch();
                 }}
               >
                 Сбросить

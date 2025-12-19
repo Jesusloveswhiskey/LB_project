@@ -23,49 +23,74 @@ class UserSerializer(serializers.ModelSerializer):
             user.save()
         return user
 
-
-class PersonSerializer(serializers.ModelSerializer):
+class PersonShortSerializer(serializers.ModelSerializer):
     class Meta:
         model = Person
-        fields = ["id", "name", "role", "photo"]
-
-
-class MovieSerializer(serializers.ModelSerializer):
-    average_rating = serializers.SerializerMethodField()
-    user_rating = serializers.SerializerMethodField()
-
-    people = PersonSerializer(many=True, read_only=True) 
-
-    class Meta:
-        model = Movie
-        fields = ["id", "title", "poster", "description", "year_released", "length_minutes", "genre", "average_rating", "user_rating", "people"]
-
-    def get_average_rating(self, obj):
-        ratings = obj.ratings.all()
-        if not ratings.exists():
-            return None
-        return round(
-            sum(r.score for r in ratings) / ratings.count(),
-            1
-        )
-
-    def get_user_rating(self, obj):
-            request = self.context.get("request")
-            if not request or not request.user.is_authenticated:
-                return None
-
-            rating = obj.ratings.filter(user=request.user).first()
-            if rating:
-                return {
-                    "id": rating.id,
-                    "score": rating.score
-                }
-            return None
+        fields = ["id", "name", "photo", "role"]
 
 class MovieShortSerializer(serializers.ModelSerializer):
     class Meta:
         model = Movie
         fields = ["id", "title", "year_released", "poster"]
+
+
+class PersonSerializer(serializers.ModelSerializer):
+    movies = MovieShortSerializer(many=True, read_only=True)
+    class Meta:
+        model = Person
+        fields = ["id", "name", "photo", "role", "movies"]
+
+
+class MovieSerializer(serializers.ModelSerializer):
+    people = PersonSerializer(many=True, read_only=True)
+    is_liked = serializers.SerializerMethodField()
+    like_id = serializers.SerializerMethodField()
+    user_rating = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Movie
+        fields = "__all__"
+
+    def get_is_liked(self, obj):
+        request = self.context.get("request")
+        if not request or not request.user.is_authenticated:
+            return False
+
+        return Like.objects.filter(
+            user=request.user,
+            movie=obj
+        ).exists()
+
+    def get_like_id(self, obj):
+        request = self.context.get("request")
+        if not request or not request.user.is_authenticated:
+            return None
+
+        like = Like.objects.filter(
+            user=request.user,
+            movie=obj
+        ).first()
+
+        return like.id if like else None
+    
+    def get_user_rating(self, obj): #получение рейтинга для каждого фильма
+        request = self.context.get("request")
+
+        if not request or not request.user.is_authenticated:
+            return None
+
+        rating = Rating.objects.filter(
+            user=request.user,
+            movie=obj
+        ).first()
+
+        if not rating:
+            return None
+
+        return {
+            "id": rating.id,
+            "score": rating.score
+        }
 
 
 class PersonDetailSerializer(serializers.ModelSerializer):
@@ -76,20 +101,52 @@ class PersonDetailSerializer(serializers.ModelSerializer):
         fields = ["id", "name", "role", "movies"]
 
 class ReviewSerializer(serializers.ModelSerializer):
-    user = serializers.StringRelatedField(read_only=True)
+    user = serializers.SerializerMethodField()
 
     class Meta:
         model = Review
-        fields = '__all__'
+        fields = ["id", "user", "text", "created_at", "movie"]
+
+    def get_user(self, obj):
+        return {
+            "id": obj.user.id,
+            "username": obj.user.username,
+        }
 
 
 class LikeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Like
-        fields = '__all__'
+        fields = ["id", "movie", "created_at"]
 
 
 class RatingSerializer(serializers.ModelSerializer):
+    
     class Meta:
         model = Rating
         fields = ["id", "score", "movie"]
+
+
+class ProfileMovieSerializer(serializers.ModelSerializer): #для страницы профиля пользователя
+    my_rating = serializers.SerializerMethodField()
+    my_review = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Movie
+        fields = [
+            "id",
+            "title",
+            "poster",
+            "my_rating",
+            "my_review"
+        ]
+
+    def get_my_rating(self, obj):
+        user = self.context["request"].user
+        rating = obj.ratings.filter(user=user).first()
+        return rating.score if rating else None
+
+    def get_my_review(self, obj):
+        user = self.context["request"].user
+        review = obj.reviews.filter(user=user).first()
+        return review.text if review else None

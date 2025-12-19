@@ -3,8 +3,9 @@ import { useParams, Link } from "react-router-dom";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
 import CastAndCrew from "../components/Cast";
+import Reviews from "../components/Review";
 
-// ⭐ Компонент звёзд (без изменений, он нормальный)
+
 function StarRating({ value, onChange }) {
   return (
     <div style={{ display: "flex", gap: "4px" }}>
@@ -14,9 +15,9 @@ function StarRating({ value, onChange }) {
           style={{
             cursor: "pointer",
             fontSize: "24px",
-            // Подсвечиваем, если звезда меньше или равна текущей оценке
+
             color: star <= value ? "gold" : "#ccc",
-            transition: "color 0.2s" // Плавность
+            transition: "color 0.2s" 
           }}
           onClick={() => onChange(star)}
         >
@@ -33,65 +34,87 @@ export default function MovieDetail() {
 
   const [movie, setMovie] = useState(null);
   const [userRating, setUserRating] = useState(null);
+  const [liked, setLiked] = useState(false);
+  const [likeId, setLikeId] = useState(null);
 
-  // 🔄 Загрузка фильма
-  useEffect(() => {
-    api.get(`/movies/${id}/`)
-      .then(res => {
-        console.log("Movie Data:", res.data); // 🔍 Для отладки
-        setMovie(res.data);
-        // Убедись, что бэкенд возвращает user_rating в формате { id: ..., score: ... }
-        if (res.data.user_rating) {
-            setUserRating(res.data.user_rating);
-        }
-      })
-      .catch(err => console.error("MOVIE LOAD ERROR:", err));
-  }, [id]);
+
+useEffect(() => {
+  api.get(`/movies/${id}/`)
+    .then(res => {
+      setMovie(res.data);
+
+      if (res.data.user_rating) {
+        setUserRating(res.data.user_rating);
+      }
+
+      if (res.data.is_liked) {
+        setLiked(true);
+        setLikeId(res.data.like_id);
+      }
+    })
+    .catch(err => console.error("MOVIE LOAD ERROR:", err));
+}, [id]);
+
+const toggleLike = async () => {
+  if (!user) {
+    alert("Войдите, чтобы ставить лайки");
+    return;
+  }
+
+  try {
+    const res = await api.post("/likes/toggle/", {
+      movie: movie.id
+    });
+
+    setLiked(res.data.liked);
+
+  } catch (e) {
+    console.error("LIKE ERROR:", e.response?.data || e);
+  }
+};
 
 const submitRating = async (score) => {
+  if (!user) return;
 
-  const prevRating = userRating; 
+  const prevRating = userRating;
 
-  setUserRating((prev) => ({
+  setUserRating(prev => ({
     ...(prev || {}),
-    score: score,
-    id: prev?.id 
+    score
   }));
 
   try {
     const payload = {
-      movie: movie.id, 
-      score: score
+      movie: movie.id,
+      score
     };
 
-    let res;
-    if (prevRating?.id) {
-       res = await api.put(`/ratings/${prevRating.id}/`, payload);
-    } else {
-       res = await api.post("/ratings/", payload);
-    }
-
+    // let res;
+    // if (prevRating?.id) {
+    //   res = await api.put(`/ratings/${prevRating.id}/`, payload);
+    // } else {
+    //   res = await api.post("/ratings/", payload);
+    // }
+    const res = await api.post("/ratings/", {
+      movie: movie.id,
+      score
+    });
 
     setUserRating(res.data);
-    api.get(`/movies/${id}/`).then(movieRes => {
-        setMovie(movieRes.data);
-    });
+    const movieRes = await api.get(`/movies/${id}/`);
+    setMovie(movieRes.data);
 
   } catch (e) {
     console.error("RATING ERROR:", e.response?.data || e);
-    
     setUserRating(prevRating);
-    // alert("Не удалось сохранить оценку. Проверьте соединение.");
+    alert("Не удалось сохранить оценку");
   }
 };
 
   if (!movie) return <p>Загрузка...</p>;
 
-  // Логика проверки наличия каста
-  const hasCast = movie.people && movie.people.length > 0;
-
   return (
-    <div style={{ maxWidth: "900px", margin: "0 auto", paddingBottom: "50px" }}>
+    <div class='container' style={{ maxWidth: "900px", margin: "10px auto", paddingBottom: "50px" }}>
       <div style={{ display: "flex", gap: "30px", flexWrap: "wrap" }}>
         <img
           src={movie.poster}
@@ -104,7 +127,24 @@ const submitRating = async (score) => {
         />
 
         <div>
-          <h1>{movie.title}</h1>
+          <h1 style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            {movie.title}
+
+            {user && (
+              <span
+                onClick={toggleLike}
+                style={{
+                  cursor: "pointer",
+                  fontSize: "28px",
+                  color: liked ? "red" : "#aaa",
+                  transition: "0.2s"
+                }}
+                title={liked ? "Убрать из лайков" : "Добавить в лайки"}
+              >
+                {liked ? "❤️" : "🤍"}
+              </span>
+            )}
+          </h1>
 
           <p><b>Год:</b> {movie.year_released}</p>
           <p><b>Жанр:</b> {movie.genre}</p>
@@ -112,7 +152,9 @@ const submitRating = async (score) => {
 
           <p style={{ marginTop: "10px" }}>
             <b>Общий рейтинг:</b>{" "}
-            {movie.average_rating ? movie.average_rating.toFixed(1) : "—"}
+            {movie.average_rating
+              ? Number(movie.average_rating).toFixed(1)
+              : "—"}
           </p>
 
           {/* ⭐ Пользовательская оценка */}
@@ -121,12 +163,10 @@ const submitRating = async (score) => {
               <>
                 <p style={{marginBottom: "5px"}}><b>Ваша оценка:</b></p>
                 <StarRating
-                  // Важно: если userRating null, передаем 0
+
                   value={userRating?.score || 0}
                   onChange={submitRating}
                 />
-                {/* Отладочный вывод (можно убрать потом) */}
-                {/* <small style={{color: 'grey'}}>Debug: {userRating?.score} (ID: {userRating?.id})</small> */}
               </>
             ) : (
               <p>
@@ -140,13 +180,7 @@ const submitRating = async (score) => {
       {/* 🎭 Cast & Crew: Исправленная логика */}
       <div style={{ marginTop: "40px" }}>
         <h3>Актёрский состав и создатели</h3>
-        {hasCast ? (
-          <CastAndCrew people={movie.people} />
-        ) : (
-          <p style={{ color: "#777", fontStyle: "italic" }}>
-            Информация об актёрском составе еще не добавлена.
-          </p>
-        )}
+        <CastAndCrew people={movie.people} />
       </div>
 
       {/* 📝 Описание */}
@@ -156,6 +190,7 @@ const submitRating = async (score) => {
           {movie.description || "Описание отсутствует."}
         </p>
       </div>
+      <Reviews movieId={movie.id} />
     </div>
   );
 }
